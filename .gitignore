@@ -1,0 +1,9 @@
+CMakeUserPresets.json
+build/
+venv/
+*.egg-info/
+*.so
+vcpkg_installed/
+.vscode/
+.DS_Store
+install/

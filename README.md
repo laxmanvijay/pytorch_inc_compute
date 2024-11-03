@@ -47,8 +47,11 @@ pip install -r requirements.txt
 
 This package can be built as a static library using cmake and then manually distributed.
 
+To build the package:
+
 ```bash
-cmake -S . -B build
+cmake --preset=default
+cmake --build build
 ```
 
 Or it could be consumed by vcpkg directly by required packages using overlay ports (like pytorch_inc_backend package for example). 
@@ -73,3 +76,5 @@ Then run `vcpkg install` on the dependent package to install `incc`.
 
 Overlay ports is configured using the following files:
 * portfile.cmake
+
+For every change in this library, this process has to be repeated to see the changes in the dependent packages.

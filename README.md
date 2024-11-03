@@ -54,6 +54,13 @@ cmake --preset=default
 cmake --build build
 ```
 
+To build an executable: 
+
+```bash
+cmake --preset=default -DBUILD_EXE=TRUE
+cmake --build build
+```
+
 Or it could be consumed by vcpkg directly by required packages using overlay ports (like pytorch_inc_backend package for example). 
 
 To install it as a vcpkg port, cd outside this project and run:

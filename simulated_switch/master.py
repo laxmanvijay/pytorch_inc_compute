@@ -1,47 +1,39 @@
-import scapy.all as scapy
+from scapy.all import IP, TCP, Raw
 import multiprocessing
 
 from worker import SimulatedSwitchWorker
 
 class SimulatedSwitchMaster:
     def process(self, data):
-        print("Processing data: %s" % data)
-        # parse the incoming tcp packet using scapy
-        packet = scapy.IP(data)
-        
-        print(packet.show())
-        payload = packet[scapy.TCP].payload
+        print("Processing data length: %d" % len(data))
+        try:
+            # Create workers based on data size
+            num_workers = min(4, len(data))  # Max 4 workers
+            workers = [SimulatedSwitchWorker() for _ in range(num_workers)]
+            result_queue = multiprocessing.Queue()
 
-        print(payload)
-        tcp_headers = packet[scapy.TCP].fields
-        print(tcp_headers)
+            processes = []
+            if data:
+                chunk_size = len(data) // len(workers)
+                for i, worker in enumerate(workers):
+                    start = i * chunk_size
+                    end = start + chunk_size if i < len(workers)-1 else len(data)
+                    p = multiprocessing.Process(target=worker.process, 
+                                              args=(data[start:end], result_queue))
+                    processes.append(p)
+                    p.start()
 
-        workers = [SimulatedSwitchWorker() for i in range(tcp_headers['data_size'])]
+            # Wait for all processes to complete
+            for p in processes:
+                p.join()
 
-        result_queue = multiprocessing.Queue()
+            # Collect results
+            results = []
+            while not result_queue.empty():
+                results.append(result_queue.get())
 
-        # Start a process for each worker
-        processes = []
-        chunk_size = len(payload) // len(workers)
-        for i, worker in enumerate(workers):
-            start = i * chunk_size
-            end = start + chunk_size if i < len(workers)-1 else len(payload)
-            p = multiprocessing.Process(target=worker.process, 
-                                      args=(payload[start:end], result_queue))
-            processes.append(p)
-            p.start()
+            return sum(results)
 
-        # Wait for all processes to finish
-        for p in processes:
-            p.join()
-
-        # Collect all results from the queue
-        results = []
-        while not result_queue.empty():
-            results.append(result_queue.get())
-
-        # Perform the reduction operation (sum in this case)
-        total_sum = sum(results)
-
-        # Return the results
-        return total_sum
+        except Exception as e:
+            print(f"Error processing data: {str(e)}")
+            return None

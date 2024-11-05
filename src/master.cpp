@@ -14,17 +14,9 @@
 
 namespace Scheduler {
 
-    struct pseudo_header {
-        u_int32_t source_address;
-        u_int32_t dest_address;
-        u_int8_t placeholder;
-        u_int8_t protocol;
-        u_int16_t tcp_length;
-    };
-
     int schedule(std::vector<int>& data) {
-        // Create TCP socket instead of raw socket
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        // Create UDP socket
+        int sock = socket(AF_INET, SOCK_DGRAM, 0);
         if (sock < 0) {
             std::cerr << "Socket creation failed: " << strerror(errno) << std::endl;
             return -1;
@@ -37,16 +29,21 @@ namespace Scheduler {
         server_addr.sin_port = htons(10001);
         server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-        // Connect to server
-        if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-            std::cerr << "Connection failed: " << strerror(errno) << std::endl;
-            close(sock);
-            return -1;
-        }
+        // Setup IO vector
+        struct iovec iov;
+        iov.iov_base = data.data();
+        iov.iov_len = data.size() * sizeof(int);
 
-        // Send data directly
-        size_t total_size = data.size() * sizeof(int);
-        if (send(sock, data.data(), total_size, 0) < 0) {
+        // Setup message header
+        struct msghdr msg;
+        memset(&msg, 0, sizeof(msg));
+        msg.msg_name = &server_addr;
+        msg.msg_namelen = sizeof(server_addr);
+        msg.msg_iov = &iov;
+        msg.msg_iovlen = 1;
+
+        // Send using sendmsg
+        if (sendmsg(sock, &msg, 0) < 0) {
             std::cerr << "Send failed: " << strerror(errno) << std::endl;
             close(sock);
             return -1;

@@ -16,7 +16,7 @@ class SimulatedSwitchHandler(socketserver.BaseRequestHandler):
             int_data = struct.unpack(f'{num_ints}i', data)
             print("Received data:", list(int_data))
 
-            result = self.server.switch_master.process(data)
+            result = self.server.switch_master.process(list(int_data))
             print("Process result:", result)
             
             # Send result back

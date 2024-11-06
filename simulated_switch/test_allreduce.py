@@ -2,6 +2,8 @@
 import unittest
 from unittest.mock import Mock, patch
 import multiprocessing
+import socket
+import struct
 from master import SimulatedSwitchMaster
 from worker import SimulatedSwitchWorker
 
@@ -19,31 +21,7 @@ class TestAllReduce(unittest.TestCase):
         
         result = queue.get()
         self.assertEqual(result, 10)  # sum of [1,2,3,4]
-        
-    @patch('scapy.all.IP')
-    def test_master_allreduce(self, mock_ip):
-        # Mock TCP packet data
-        test_payload = [1, 2, 3, 4]
-        mock_tcp = Mock()
-        mock_tcp.payload = test_payload
-        
-        # Mock TCP headers
-        mock_fields = {'data_size': 3}  # Create 3 workers
-        mock_tcp.fields = mock_fields
-        
-        # Setup mock IP packet
-        mock_packet = Mock()
-        mock_packet.show = Mock(return_value=None)
-        mock_packet.__getitem__ = Mock(return_value=mock_tcp)
-        mock_ip.return_value = mock_packet
-        
-        # Test master process
-        result = self.master.process(b"mock_data")
-        
-        # Each worker processes a portion of [1,2,3,4]
-        # Final allreduce sum should be 10
-        self.assertEqual(result, 10)
-        
+
     def test_end_to_end(self):
         # Test complete allreduce operation
         test_data = [1, 2, 3, 4]
@@ -74,6 +52,27 @@ class TestAllReduce(unittest.TestCase):
         # Verify final sum
         final_sum = sum(results)
         self.assertEqual(final_sum, 20)  # 2 workers * sum([1,2,3,4])
+
+    @patch('socket.socket')
+    def test_schedule(self, mock_socket):
+        # Setup mock socket and response
+        mock_sock = Mock()
+        mock_socket.return_value = mock_sock
+        
+        # Mock receive data (simulating server response of sum=10)
+        mock_sock.recv.return_value = struct.pack('i', 10)
+        
+        # Test data
+        test_data = [1, 2, 3, 4]
+        
+        # Create master instance
+        master = SimulatedSwitchMaster()
+        
+        # Call schedule method
+        result = master.process(test_data)
+        
+        # Verify result
+        self.assertEqual(result, 10)
 
 if __name__ == '__main__':
     unittest.main()

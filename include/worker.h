@@ -1,8 +1,13 @@
-#include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
 #include <vector>
+#include <fmt/core.h>
 #include <numeric>
+#include <netinet/tcp.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 namespace Worker {
-    void partial_sum(const std::vector<int>& data, int start, int end, int& total_sum, boost::mutex& mutex);
+    int send_to_switch(std::vector<int>& data);
 }

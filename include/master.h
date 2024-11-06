@@ -1,8 +1,6 @@
-#include<vector>
+#include <vector>
 #include <fmt/core.h>
-#include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
-#include <numeric>
+#include <fmt/ranges.h>
 
 namespace Scheduler
 {
